@@ -1,0 +1,724 @@
+syntax = "proto2";
+
+package vox.store;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "voximplant/proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "Storages";
+option java_package = "com.voximplant.store";
+
+/**
+ * Request structure for the [Logon] method.
+ */
+message LoginRequest {
+
+    /**
+     * Unique Voximplant account's identifiers.
+     */
+    oneof user_identifier {
+
+        /**
+         * Name of the Voximplant account.
+         */
+        string account_name = 1;
+
+        /**
+         * Account email.
+         */
+        string account_email = 2;
+
+        /**
+         * Account ID.
+         */
+        int32 account_id = 3;
+    }
+
+    /**
+     * Voximplant account authorization method.
+     */
+    oneof user_authorization {
+
+        /**
+         * Account password.
+         */
+        string account_password = 4;
+
+        /**
+         * Account session ID.
+         */
+        string session_id = 5;
+
+        /**
+         * Account API key.
+         */
+        string api_key = 6;
+    }
+}
+
+/**
+ * Response structure for the [Login] method
+ */
+message LoginResponse {
+
+    /**
+     * JWT token for authorization purposes. The token should be passed as the `Authorization` header. Example: `Authorization:Bearer <token>`.
+     */
+    required string jwt_token = 1;
+}
+
+/**
+ * Structure that represents a participant.
+ */
+message Participant {
+
+    /**
+     * User's IM unique ID. Can be retrieved via the [GetUserData] method.
+     */
+    required sint64 user_id = 1;
+
+    /**
+     * Field that shows if a participant can write in a conversation.
+     * The permission is given by default.
+     */
+    optional bool can_write = 2 [default = true];
+
+    /**
+     * Field that shows if the participant can edit its own messages in a conversation.
+     * The permission is given by default.
+     */
+    optional bool can_edit = 3 [default = true];
+
+    /**
+     * Field that shows if the participant can remove its own messages in a conversation.
+     * The permission is given by default.
+     */
+    optional bool can_remove = 4 [default = true];
+
+    /**
+     * Field that shows if the conversation participant can manage
+     * other participants in a conversation:
+     * * add, remove and edit permissions
+     * * add and remove participants
+     *
+     * If the participant has both `can_manage_participants`
+     * and `is_owner` permissions, it can edit other owners.
+     */
+    optional bool can_manage_participants = 5 [default = false];
+
+    /**
+     * Field that shows if the participant can edit all messages
+     * in a conversation.
+     */
+    optional bool can_edit_all = 6 [default = false];
+
+    /**
+     * Field that shows if the participant can remove
+     * all messages in a conversation.
+     */
+    optional bool can_remove_all = 7 [default = false];
+
+    /**
+     * Field that shows if the participant is an owner.
+     * There could be more than one owner in a conversation.
+     *
+     * If true, the participant can edit a conversation. If true and
+     * `can_manage_participants` is true, the participant can
+     * manage other owners.
+     */
+    optional bool is_owner = 8 [default = false];
+}
+
+/**
+ * Request structure for the [CreateConversation] method.
+ */
+message CreateConversationRequest {
+
+    /**
+     * Title of a new conversation. Maximum length is 50 characters.
+     */
+    required string title = 1;
+
+    /**
+     * Is a conversation direct or not.
+     *
+     * See the [Conversation] structure for details.
+     */
+    optional bool direct = 2 [default = false];
+
+    /**
+     * Is a conversation public or not.
+     *
+     * See the [Conversation] structure for details.
+     */
+    optional bool enable_public_join = 3 [default = false];
+
+    /**
+     * Is a conversation uber or not.
+     *
+     * See the [Conversation] structure for details.
+     */
+    optional bool uber_conversation = 4 [default = false];
+
+    /**
+     * JSON object with a custom user data.
+     */
+    optional google.protobuf.Struct custom_data = 5;
+
+    /**
+     * Array of the [Participant] objects.
+     */
+    repeated Participant participants = 6;
+}
+
+/**
+ * Request structure for the [EditConversation] method.
+ */
+message EditConversationRequest {
+    /**
+     * Data structure.
+     */
+    message Data {
+
+        /**
+         * New conversation title.
+         */
+        optional string title = 1;
+
+        /**
+         * New value for `enable_public_join`.
+         */
+        optional bool enable_public_join = 2;
+
+        /**
+         * New JSON object with a custom user data.
+         */
+        optional google.protobuf.Struct custom_data = 3;
+    }
+
+    /**
+     * Conversation UUID. Can be retrieved via
+     * the [CreateConversation] and [GetConversations] methods.
+     */
+    required string uuid = 1;
+
+    /**
+     * [Data] object.
+     */
+    required Data data = 2;
+}
+
+/**
+ * Response structure for the [CreateConversation] method.
+ */
+message CreateConversationResponse {
+
+    /**
+     * Conversation UUID.
+     */
+    required string uuid = 1;
+}
+
+/**
+ * Request structure for the [GetConversations] method.
+ */
+message GetConversationsRequest {
+
+    /**
+     * Array of conversation titles to search.
+     */
+    repeated string title = 1;
+
+    /**
+     * Is `enable_public_join` true or false.
+     */
+    optional bool enable_public_join = 2;
+
+    /**
+     * Array of conversation UUID(s).
+     */
+    repeated string uuid = 3;
+
+    // TODO: add more params
+    extensions 4 to 9;
+
+    /**
+     * Maximum number of entries in the result.
+     */
+    optional int32 count = 10 [default = 20];
+
+    /**
+     * The first N records will be skipped in the output.
+     */
+    optional int32 offset = 11 [default = 0];
+}
+
+/**
+ * Structure that represents a conversation.
+ */
+message Conversation {
+
+    /**
+     * Conversation UUID.
+     */
+    required string uuid = 1;
+
+    /**
+     * Conversation title.
+     */
+    required string title = 2;
+
+    /**
+     * Field that shows if a conversation is direct or not.
+     *
+     * There can be only 2 participants in a direct conversation
+     * which is unique and the only one for these participants.
+     * There can't be more than 1 direct conversation for the same 2 users.
+     *
+     * If one of these users tries to create a new direct conversation
+     * with the same participant, the method will return
+     * the UUID of the already existing direct conversation.
+     *
+     * A direct conversation can't be uber and/or public.
+     */
+    required bool direct = 3;
+
+    /**
+     * If true, users of both the current child account and the main
+     * Voximplant developer account can join the conversation by its UUID.
+     * If false, new users can be added by the conversation participants
+     * with the `can_manage_participants` permission.
+     */
+    required bool enable_public_join = 4;
+
+    /**
+     * If true, users can see only messages which were created
+     * during their participating in the conversation.
+     *
+     * If false, users can see all ever created messages in the conversation.
+     */
+    required bool uber_conversation = 5;
+
+    /**
+     * JSON object with a custom user data.
+     */
+    required google.protobuf.Struct custom_data = 6;
+
+    /**
+     * Array of the [Participant] objects.
+     */
+    repeated Participant participants = 7;
+
+    /**
+     * The last sequence in the conversation
+     */
+    optional sint64 last_seq = 8;
+}
+
+/**
+ * Response structure for the [GetConversations] method.
+ */
+message GetConversationsResponse {
+
+    /**
+     * Array of the [Conversation] objects.
+     */
+    repeated Conversation conversations = 1;
+}
+
+/**
+ * Request structure for the [RemoveConversations] method.
+ */
+message RemoveConversationsRequest {
+
+    /**
+     * Array of conversation UUID(s).
+     */
+    repeated string uuids = 1;
+}
+/**
+ * Request structure for the [GetParticipants] method.
+ */
+message GetParticipantsRequest {
+
+    /**
+     * Conversation UUID.
+     */
+    required string uuid = 1;
+}
+
+/**
+ * Response structure for the [GetParticipants] method.
+ */
+message GetParticipantsResponse {
+
+    /**
+     * Array of the [Participant] objects.
+     */
+    repeated Participant participants = 1;
+}
+
+/**
+ * Request structure for the [AddParticipants] method.
+ */
+message AddParticipantsRequest {
+
+    /**
+     * Conversation UUID.
+     */
+    required string uuid = 1;
+
+    /**
+     * Array of the [Participant] objects to add.
+     */
+    repeated Participant participants = 2;
+}
+
+/**
+ * Request structure for the [RemoveParticipants] method.
+ */
+message RemoveParticipantsRequest {
+
+    /**
+     * Conversation UUID.
+     */
+    required string uuid = 1;
+
+    /**
+     * Array of the [Participant] ids to remove.
+     */
+    repeated sint64 participants = 2;
+}
+
+/**
+ * Request structure for the [ManagePermission] method.
+ */
+message ManagePermissionsRequest {
+
+    /**
+     * Conversation UUID.
+     */
+    required string uuid = 1;
+
+    /**
+     * Array of the [Participant] objects.
+     */
+    repeated Participant participants = 2;
+}
+
+/**
+ * Request structure for the [GetUserData] method.
+ */
+message GetUserDataRequest {
+
+    /**
+     * Array of the [UserInfo] objects.
+     */
+    repeated UserInfo users = 1;
+}
+
+/**
+ * Structure that represents the user's identifiers.
+ */
+message UserInfo {
+
+    /**
+     * User's IM unique ID.
+     */
+    optional sint64 user_id = 1;
+
+    /*
+     * Voximplant user identifier,
+     * for example `username@appname.accname`.
+     */
+    optional string user_name = 2;
+}
+
+/**
+ * Structure that represents user information.
+ */
+message UserData {
+
+    // User's IM unique ID.
+    required sint64 user_id = 1;
+
+    /**
+     * Voximplant user identifier,
+     * for example `username@appname.accname`.
+     */
+    required string user_name = 2;
+
+    /**
+     * Get the user's display name which is specified during user creation via
+     * [the Voximplant control panel](https://manage.voximplant.com/#addUser) or [HTTP API](https://voximplant.com/docs/references/httpapi/managing_users#adduser).
+     */
+    required string display_name = 3;
+
+    /**
+     * JSON object with a custom user data.
+     */
+    required google.protobuf.Struct custom_data = 4;
+
+    /**
+     * JSON object with a private custom user data which
+     * is available only to the current user.
+     */
+    optional google.protobuf.Struct private_custom_data = 5;
+
+    /**
+     * Array of UUIDs of the conversations that the user currently belongs to.
+     */
+    repeated string active_conversations = 6;
+
+    /**
+     * Get the list of UUIDs for the conversations that:
+     * * the user belonged to, but currently is not participating in
+     * * are not removed
+     */
+    repeated string left_conversations = 7;
+
+    /**
+     * Is the user deleted or not.
+     */
+    required bool deleted = 8;
+
+    required sint64 vox_account_id =9;
+    required sint64 vox_application_id = 10;
+    required sint64 vox_identity_id = 11;
+}
+
+/**
+ * Response structure for the [GetUserData] method.
+ */
+message GetUserDataResponse {
+
+    /**
+     * Array of the [UserData] objects.
+     */
+    repeated UserData users = 1;
+}
+
+/**
+ * Request structure for the [EditUserData] method.
+ */
+message EditUserDataRequest {
+
+    /**
+     * Data structure.
+     */
+    message Data {
+
+        /**
+         * JSON object with a custom user data.
+         */
+        required google.protobuf.Struct custom_data = 1;
+
+        /**
+         * JSON object with a private custom user data which
+         * is available only to the current user.
+         */
+        optional google.protobuf.Struct private_custom_data = 2;
+    }
+
+    /**
+     * User's IM unique ID. Can be retrieved via the [GetUserData] method.
+     */
+    required sint64 user_id = 1;
+
+    /**
+     *[Data] object.
+     */
+    required Data data = 2;
+}
+
+
+/**
+ * Structure that represents a message.
+ */
+message Message {
+
+    /**
+     * Conversation UUID.
+     */
+    required string conversationUUID = 1;
+
+    /**
+     * Message UUID which is used in [EditMessageRequest].
+     */
+    required string messageUUID = 2;
+
+    /**
+     * Message text. Maximum length is 5000 symbols.
+     */
+    required string text = 3;
+
+    /**
+     * Array of JSON objects with a custom data.
+     */
+    repeated google.protobuf.Struct payload = 4;
+}
+
+message RetransmitEventsRequest {
+    /**
+     * Conversation UUID.
+     */
+    required string conversationUUID = 1;
+
+    /**
+    * The top value of sequence for retransmitted events.
+    */
+    required sint64 eventsTo = 2;
+    required sint32 count = 3;
+}
+
+
+/**
+ * Event is triggered when an income message is received
+ */
+message MessageReceivedEvent {
+
+    /**
+     * Message object.
+     */
+    required vox.store.Message message = 1;
+
+    /**
+     * User ID of a message sender.
+     */
+    required sint64 initiator = 2;
+
+    /**
+     * Receiving time in the UNIX epoch format (seconds).
+     */
+    required google.protobuf.Timestamp timestamp = 3;
+
+    /**
+     * The sequence for event
+     */
+    optional sint64 sequence = 4;
+}
+
+/**
+ * Event is triggered when a message in a conversation is edited.
+ */
+message MessageEditedEvent {
+
+    /**
+     * Message object.
+     */
+    required vox.store.Message message = 1;
+
+    /**
+     * User ID of a message editor.
+     */
+    required sint64 initiator = 2;
+
+    /**
+     * Modifying time in the UNIX epoch format (seconds).
+     */
+    required google.protobuf.Timestamp modifiedAt = 3;
+
+    /**
+     * The sequence for event
+     */
+    optional sint64 sequence = 4;
+}
+
+/**
+ *Event is triggered when a message in a conversation is removed.
+ */
+message MessageRemovedEvent {
+
+    /**
+     * Message UUID.
+     */
+    required string messageUUID = 1;
+
+    /**
+     * Conversation UUID.
+     */
+    required string conversationUUID = 2;
+
+    /**
+     * User ID of a message remover.
+     */
+    required sint64 initiator = 3;
+
+    /**
+     * Removing time in the UNIX epoch format (seconds).
+     */
+    required google.protobuf.Timestamp removedAt = 4;
+
+    /**
+     * The sequence for event
+     */
+    optional sint64 sequence = 5;
+}
+
+message RetransmitEvent {
+    enum Type {
+        SendMessage = 0;
+        EditMessage = 1;
+        RemoveMessage = 2;
+        CreateConversation = 3;
+        EditConversation = 4;
+    }
+
+    required Type type = 1;
+    oneof data {
+        MessageReceivedEvent messageReceivedEvent = 2;
+        MessageEditedEvent messageEditedEvent = 3;
+        MessageRemovedEvent messageRemovedEvent = 4;
+        ConversationCreatedEvent conversationCreatedEvent = 5;
+        ConversationEditedEvent conversationEditedEvent = 6;
+    }
+}
+
+message RetransmitEventsResponse {
+
+    /**
+     * Conversation UUID.
+     */
+    required string conversationUUID = 1;
+    repeated RetransmitEvent messages = 2;
+}
+
+/**
+ * Event is triggered when a conversation is created.
+ */
+message ConversationCreatedEvent {
+
+    /**
+     * Conversation object
+     */
+    required vox.store.Conversation conversation = 1;
+
+    /**
+     * User ID of a conversation creator.
+     */
+    required sint64 initiator = 2;
+}
+
+/**
+ * Event is triggered when a conversation is modified.
+ */
+message ConversationEditedEvent {
+
+    /**
+     * Conversation object.
+     */
+    required vox.store.Conversation conversation = 1;
+
+    /**
+     * User ID of a conversation editor.
+     */
+    required sint64 initiator = 2;
+
+    /**
+     * Action type that triggered the event.
+     */
+    required string incoming_action_type = 3;
+}

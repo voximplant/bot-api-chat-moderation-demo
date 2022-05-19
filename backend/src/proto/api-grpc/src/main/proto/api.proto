@@ -1,0 +1,342 @@
+syntax = "proto3";
+
+import "structs.proto";
+import "bot.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+package com.voximplant.im;
+
+option go_package = "voximplant/proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "IMApi";
+option java_package = "com.voximplant.im";
+
+
+/**
+ * The methods for authorization management.
+ *
+ * All methods are executed on behalf of a main Voximplant developer account,
+ * i.e., with all possible permissions.
+ */
+service AuthorizationService {
+
+    /**
+     * `Login` performs login with the specified credentials.
+     * See the possible authorization options [in the HTTP API reference.](https://voximplant.com/docs/references/httpapi/auth_parameters).
+     * Response contains a token required for using all other API methods.
+     *
+     * Note that a token expires in 30 seconds. Bot uses a separate token, see
+     * the __BotManagementService__ method.
+     */
+    rpc Login(vox.store.LoginRequest) returns (vox.store.LoginResponse) {
+        option (google.api.http) = {
+            post: "/v1/login"
+            body: "*"
+        };
+    }
+    // TODO: add logout, getSessions, killSessions
+}
+
+/**
+ * The methods for conversation management.
+ *
+ * All methods are executed on behalf of a main Voximplant developer account,
+ * i.e., with all possible permissions.
+ */
+service ConversationService {
+
+    /**
+     * `CreateConversation` creates a new conversation with the extended configuration.
+     *
+     * Returns UUID for a new conversation.
+     */
+    rpc CreateConversation(vox.store.CreateConversationRequest) returns (vox.store.CreateConversationResponse) {
+        option (google.api.http) = {
+            post: "/v1/conversation/create"
+            body: "*"
+        };
+    }
+
+    /**
+     * `EditConversation` updates the specified conversation.
+     */
+    rpc EditConversation(vox.store.EditConversationRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/conversation/{uuid}/edit"
+            body: "data"
+        };
+    }
+
+    /**
+     * `GetConversations` searches for the specified conversation(s). The search results are filtered according to the specified parameters only.
+     *
+     * If parameters are not specified, the method returns the last 20 conversations that were created in the account.
+     */
+    rpc GetConversations(vox.store.GetConversationsRequest) returns (vox.store.GetConversationsResponse) {
+        option (google.api.http) = {
+            post: "/v1/conversations"
+            body: "*"
+        };
+    }
+
+    /**
+     * `RemoveConversations` removes all the specified conversations.
+     *
+     * Note that all specified conversations should exist. The method returns an exception if:
+     * * at least one of the specified conversations doesn't exist (or already deleted)
+     * * no conversations are passed
+     */
+    rpc RemoveConversations(vox.store.RemoveConversationsRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/conversations/remove"
+            body: "*"
+        };
+    }
+
+    /**
+     * `GetParticipants` gets participants of the specified conversation.
+     */
+    rpc GetParticipants(vox.store.GetParticipantsRequest) returns (vox.store.GetParticipantsResponse) {
+        option (google.api.http) = {
+            post: "/v1/conversations/participants"
+            body: "*"
+        };
+    }
+
+    /**
+     * `AddParticipants` allows to add participants to the specified conversation.
+     *
+     * Duplicated users are ignored. The methods returns an exception if:
+     * * at least one user doesn't exist or already belongs to the conversation
+     * * conversation UUID is invalid (deleted or doesn't exist)
+     */
+    rpc AddParticipants(vox.store.AddParticipantsRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/conversation/add_participants"
+            body: "*"
+        };
+    }
+
+    /**
+     * `RemoveParticipants` allows to remove participants from the specified conversation.
+     *
+     * Duplicated users are ignored. The methods returns an exception if:
+     * * at least one user doesn't exist or already removed from the conversation
+     * * conversation UUID is invalid (deleted or doesn't exist)
+     */
+    rpc RemoveParticipants(vox.store.RemoveParticipantsRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/conversation/remove_participants"
+            body: "*"
+        };
+    }
+
+    /**
+     *`ManagePermissions` allows to manage permissions for the specified participants. The `can_write`, `can_edit` and `can_remove` permissions are given by default to all users.
+     *
+     * See the available permissions in the [Participant] structure.
+     */
+    rpc ManagePermissions(vox.store.ManagePermissionsRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/conversation/manage_permissions"
+            body: "*"
+        };
+    }
+
+    rpc RetransmitEvents(vox.store.RetransmitEventsRequest) returns (vox.store.RetransmitEventsResponse){
+        option (google.api.http) = {
+            post: "/v1/conversation/retransmit"
+            body: "*"
+        };
+    }
+}
+
+/**
+ * The methods for user management.
+ */
+service UserDataService {
+
+    /**
+     * `GetUserData` allows to get information about the specified users.
+     *
+     * It's possible to get any users of the main Voximplant developer account or its child accounts. Each user can be specified either by ID or user name.
+     *
+     * The methods returns an exception if:
+     * * at least one user doesn't exist
+     * * at least one user belongs to another Voximplant developer account
+     */
+    rpc GetUserData(vox.store.GetUserDataRequest) returns (vox.store.GetUserDataResponse) {
+        option (google.api.http) = {
+            post: "/v1/users"
+            body: "*"
+        };
+    }
+
+    /**
+     * `EditUserData` allows to edit the specified user.
+     *
+     * It's possible to edit only one user which belongs directly to the current Voximplant developer account.
+     *
+     * The methods returns an exception if:
+     * * a user doesn't exist
+     * * a user belongs to another Voximplant developer account
+     */
+    rpc EditUserData(vox.store.EditUserDataRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/user/{user_id}/edit"
+            body: "data"
+        };
+    }
+}
+
+/**
+ * The methods for bot management.
+ *
+ * Bot is an entity for integrating with other platforms, sending service messages to conversations, etc.
+ */
+service BotManagementService {
+
+    /**
+     *`CreateBot` allows to create a new bot with the specified parameters.
+     *
+     * The method generates new credentials for a bot and returns an
+     * exception if the specified bot name is the name of already existing bot.
+     */
+    rpc CreateBot(vox.bot.CreateBotRequest) returns (vox.bot.CreateBotResponse) {
+        option (google.api.http) = {
+            post: "/v1/bot/create"
+            body: "*"
+        };
+    }
+
+    /**
+     * `RemoveBot` deletes the bot by its ID.
+     *
+     * Only a bots creator and a main Voximplant developer account are able
+     * to delete bots.
+     */
+    rpc RemoveBot(vox.bot.RemoveBotRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            delete: "/v1/bot/{id}"
+        };
+    }
+}
+
+/**
+ * The methods for available bot actions.
+ *
+ * All methods are executed on behalf of an already existing bot.
+ */
+service BotService {
+    // TODO: add more bot feature
+
+    /**
+     *`Connect` opens a bidirectional stream via GRPC. Such a stream allows
+     * bots to send commands and receive appropriate events.
+     *
+     * Available commands are SendMessage, EditMessage and RemoveMessage.
+     *
+     * Available events are:
+     * * MessageReceived
+     * * MessageEdited
+     * * MessageDeleted
+     * * ConversationEdited
+     * * ErrorOccurred
+     */
+    rpc Connect(stream vox.bot.BotCommand) returns (stream vox.bot.BotEvent) {}
+
+    /**
+     *`ConnectWithSQ` opens a bidirectional stream via GRPC. Such a stream allows
+     * bots to send commands and receive appropriate events.
+     *
+     * Available commands are EnqueueTask, EndTask, SendMessage, EditMessage and RemoveMessage.
+     *
+     * Available events are:
+     * * MessageReceived
+     * * MessageEdited
+     * * MessageDeleted
+     * * ConversationEdited
+     * * ErrorOccurred
+     * @hidden
+     */
+    rpc ConnectWithSQ(stream vox.bot.SQBotCommand) returns (stream vox.bot.SQBotEvent) {}
+
+    /**
+     * The method registers a URL as a webhook in order to use regular
+     * HTTP POST requests instead of a GRPS stream.
+     *
+     * The registered webhook is able to receive the following events that
+     * are triggered by all conversation participants except the current bot:
+     * * MessageReceived
+     * * MessageEdited
+     * * MessageDeleted
+     * * ConversationEdited
+     *
+     * There could be only one registered webhook for a bot; attempting to
+     * register a new webhook will replace the current one.
+     * @hidden
+     */
+    rpc RegisterWebHook(vox.bot.RegisterWebHookRequest) returns (vox.bot.RegisterWebHookResponse) {
+        option (google.api.http) = {
+            post: "/v1/bot/web_hook/register"
+            body: "*"
+        };
+    }
+
+    /**
+     * The method unregisters the specified webhook.
+     *
+     * The method returns an exception if the specified webhook doesn't
+     * exist or already unregistered.
+     * @hidden
+     */
+    rpc UnregisterWebHook(vox.bot.UnregisterWebHookRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            delete: "/v1/bot/web_hook/{uuid}"
+        };
+    }
+
+    /**
+     * Send a message to the specified conversation.
+     *
+     * Sending messages is available only for participants
+     * that have the `can_write` permission.
+     * @hidden
+     */
+    rpc SendMessage(vox.bot.SendMessageRequest) returns (vox.store.MessageReceivedEvent) {
+        option (google.api.http) = {
+            post: "/v1/bot/send_message"
+            body: "*"
+        };
+    }
+
+    /**
+     * Edit the specified message in the conversation.
+     *
+     * Editing messages is available only for participants
+     * that have the `can_edit` and/or `can_edit_all` permissions.
+     * @hidden
+     */
+    rpc EditMessage(vox.bot.EditMessageRequest) returns (vox.store.MessageEditedEvent) {
+        option (google.api.http) = {
+            post: "/v1/bot/edit_message"
+            body: "*"
+        };
+    }
+
+    /**
+     * Remove the specified message in the conversation.
+     *
+     * Removing messages is available only for participants
+     * that have the `can_remove` and/or `an_remove_all` permissions.
+     * @hidden
+     */
+    rpc RemoveMessage(vox.bot.RemoveMessageRequest) returns (vox.store.MessageRemovedEvent) {
+        option (google.api.http) = {
+            post: "/v1/bot/remove_message"
+            body: "*"
+        };
+    }
+}

@@ -1,0 +1,530 @@
+syntax = "proto2";
+
+package vox.bot;
+
+import "structs.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "voximplant/proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "BotStructs";
+option java_package = "com.voximplant.store";
+
+/**
+ * Request structure for the [CreateBot] method.
+ */
+message CreateBotRequest {
+
+    /**
+     * Bot name. A name must be at least 1 characters long.
+     * Latin characters, digits and special symbols are allowed.
+     */
+    required string name = 1;
+
+    /**
+     * JSON object with a custom bot data.
+     */
+    optional google.protobuf.Struct custom_data = 2;
+}
+
+/**
+ * Response structure for the [CreateBot] method.
+ *
+ * The whole JSON structure should be passed to JWT in order to authenticate a bot.
+ */
+message CreateBotResponse {
+
+    /**
+     * Private key for authentication. Service field.
+     */
+    required string privateKey = 1 [json_name = "private_key"];
+
+    /**
+     * Unique ID of a private key. Service field.
+     */
+    required string keyId = 2 [json_name = "key_id"];
+
+    /**
+     * Email of the current Voximplant developer account.
+     */
+    required string clientEmail = 3 [json_name = "client_email"];
+
+    /**
+     * IM unique ID to identify bots in events and specify in user-related methods.
+     */
+    required sint64 clientId = 4 [json_name = "client_id"];
+
+    /**
+     * Name that is specified in a request with the `bot_` prefix.
+     */
+    required string clientName = 5 [json_name = "client_name"];
+}
+
+/*
+* Request structure for the [RemoveBot] event.
+*/
+message RemoveBotRequest {
+
+    /**
+     * Bot ID.
+     */
+    required sint64 id = 1;
+}
+
+/**
+* Enum that represents command types that bots can execute.
+*/
+enum BotCommandType {
+
+    /**
+     * SendMessage - send a message to a conversation.
+     */
+    SendMessage = 0;
+
+    /**
+     * EditMessage – edit a message in a conversation.
+     */
+    EditMessage = 1;
+
+    /**
+     * RemoveMessage – remove a message from a conversation.
+     */
+    RemoveMessage = 2;
+
+    /**
+     * EnqueueTask - enqueue task to SmartQueue. Available only within stream `ConnectWithSQ`.
+     * @hidden
+     */
+    EnqueueTask = 3;
+    /**
+    * EndTask - end task processing in SmartQueue. Available only within stream `ConnectWithSQ`.
+    * @hidden
+    */
+    EndTask = 4;
+
+    /**
+     * RetransmitEvents - request for retransmitting messages within a conversation.
+     */
+    RetransmitEvents = 5;
+
+    /**
+     * Transfer - request for transferring conversation to another operator;
+     */
+    Transfer = 6;
+}
+
+
+/**
+ * The structure that defines a message to be sent.
+ *
+ * SendMessageRequest could be used in the [BotCommand] general structure.
+ */
+message SendMessageRequest {
+
+    /**
+     * Conversation UUID.
+     */
+    required string conversationUUID = 1;
+
+    /**
+     * Message text. Maximum length is 5000 symbols.
+     */
+    required string text = 2;
+
+    /**
+     * Array of JSON objects with a custom data.
+     */
+    repeated google.protobuf.Struct payload = 3;
+}
+
+/**
+ * The structure that specifies the message changes.
+ *
+ * EditMessageRequest could be used in the [BotCommand] general structure.
+ */
+message EditMessageRequest {
+
+    /**
+     * Message object.
+     */
+    required vox.store.Message message = 1;
+}
+
+/**
+ * The structure that defines a message to be removed.
+ *
+ * SendMessageRequest could be used in the [BotCommand] general structure.
+ */
+message RemoveMessageRequest {
+
+    /**
+     * Conversation UUID.
+     */
+    required string conversationUUID = 1;
+
+    /**
+     * Message UUID.
+     */
+    required string messageUUID = 2;
+}
+
+/**
+ * General structure to specify the type of a bot's command.
+ */
+message BotCommand {
+
+    /**
+     * Type of a command.
+     */
+    required BotCommandType type = 1;
+
+    /**
+     * Corresponding request.
+     */
+    oneof message {
+        SendMessageRequest sendMessageRequest = 2;
+        EditMessageRequest editMessageRequest = 3;
+        RemoveMessageRequest removeMessageRequest = 4;
+        vox.store.RetransmitEventsRequest retransmitEventsRequest = 5;
+    }
+}
+
+/**
+ * Enum that represents event types that bots can receive.
+ * 
+ * To receive the events related to a conversation, a bot should be a participant of this conversation. 
+ */
+enum BotEventType {
+
+    /**
+     * Type for [MessageReceivedEvent].
+     */
+    MessageReceived = 0;
+
+    /**
+     * Type for [MessageEditedEvent].
+     */
+    MessageEdited = 1;
+
+    /**
+     * Type for [MessageRemovedEvent].
+     */
+    MessageRemoved = 2;
+
+    /**
+     * Type for [ConversationEditedEvent].
+     */
+    ConversationEdited = 3;
+
+    /**
+     * Type for [ErrorOccurredEvent].
+     */
+    ErrorOccurred = 4;
+
+    /**
+     * @ hidden
+     */
+    TaskDistributed = 5;
+
+    /**
+     * @ hidden
+     */
+    TaskEnqueued = 6;
+
+    /**
+     * @ hidden
+     */
+    TaskFinished = 7;
+
+    /**
+     * @ hidden
+     */
+    Retransmitted = 8;
+}
+
+
+
+/**
+ * Event is triggered when an error occurred while sending any request.
+ */
+message ErrorOccurredEvent {
+
+    /**
+     * Conversation UUID.
+     */
+    required string conversationUUID = 1;
+
+    /**
+     * Message UUID.
+     */
+    optional string messageUUID = 2;
+
+    /**
+     * Error code.
+     */
+    required sint32 code = 3;
+
+    /**
+     * Error description.
+     */
+    required string description = 4;
+
+    /**
+     * Event which caused the error.
+     */
+    required string event = 5;
+}
+
+/**
+ * General structure to specify the type of a bot's event.
+ */
+message BotEvent {
+
+    /**
+     * Type of the incoming event.
+     */
+    required BotEventType type = 1;
+
+    /**
+     * Corresponding event.
+     */
+    oneof message {
+        vox.store.MessageReceivedEvent messageReceivedEvent = 2;
+        vox.store.MessageEditedEvent messageEditedEvent = 3;
+        vox.store.MessageRemovedEvent messageRemovedEvent = 4;
+        vox.store.ConversationEditedEvent conversationEditedEvent = 5;
+        ErrorOccurredEvent errorOccurredEvent = 6;
+        vox.store.RetransmitEventsResponse retransmitEvent = 10; // HINT: common fields with SQBotEvent have to be on the same places
+    }
+}
+
+
+/**
+ * @hidden
+ */
+message EnqueueSuccessEvent {
+    required string conversationUUID = 1;
+    required string task_id = 2;
+}
+
+/**
+ * @hidden
+ */
+message DistributionTaskEvent {
+    required string conversationUUID = 1;
+    required string task_id = 2;
+    required vox.store.UserInfo agentInfo = 3;
+}
+
+/**
+ * @hidden
+ */
+message TaskFinishedEvent {
+
+    enum FinishReason {
+        NONE = 0;
+        FINISHED_BY_OPERATOR = 1;
+        FINISHED_BY_CLIENT = 2;
+        EMPTY_QUEUE = 3;
+        AWAIT_TIMEOUT_REACHED = 4; // was not used
+        MAX_TIME_IN_QUEUE_REACHED = 5;
+        MAX_QUEUE_SIZE_REACHED = 6;
+        TRANSFERRED = 7;
+        OPERATOR_TIMEOUT = 8;
+        CLIENT_TIMEOUT = 9;
+    }
+
+    required string task_id = 1;
+    required FinishReason reason = 2;
+    required string conversationUUID = 3;
+}
+
+/**
+ * @hidden
+ */
+message SQBotEvent {
+
+    /**
+     * Type of the incoming event.
+     */
+    required BotEventType type = 1;
+
+    /**
+     * Corresponding event.
+     */
+    oneof message {
+        vox.store.MessageReceivedEvent messageReceivedEvent = 2;
+        vox.store.MessageEditedEvent messageEditedEvent = 3;
+        vox.store.MessageRemovedEvent messageRemovedEvent = 4;
+        vox.store.ConversationEditedEvent conversationEditedEvent = 5;
+        ErrorOccurredEvent errorOccurredEvent = 6;
+        DistributionTaskEvent distributionTaskEvent = 7;
+        EnqueueSuccessEvent enqueueSuccessEvent = 8;
+        TaskFinishedEvent taskFinishedEvent = 9;
+        vox.store.RetransmitEventsResponse retransmitEvent = 10;
+    }
+}
+
+
+/**
+ * The structure that defines a queue's brief info
+ * @hidden
+ */
+message QueueInfo {
+    optional sint64 sq_queue_id = 1;
+    optional string sq_queue_name = 2;
+}
+
+/**
+ * The structure that defines a skill info
+ * @hidden
+ */
+message Skill {
+    required string name = 1;
+    required sint32 level = 2;
+}
+
+/**
+ * The structure that defines a message for enqueue task
+ * @hidden
+ */
+message EnqueueTaskRequest {
+
+    /**
+     * Conversation UUID.
+     */
+    required string conversationUUID = 1;
+
+    /**
+     * Queue info to enqueue the task
+     */
+    required QueueInfo queue_info = 2;
+
+    /**
+     * Required skills for processing task
+     */
+    repeated Skill skills = 3;
+
+    /**
+     * Timeout for waiting operator's first reaction
+     */
+    optional sint32 establishTimeoutSec = 4;
+
+    /**
+     * Timeout for waiting operator's reaction for the client's last action within the conversation
+     */
+    optional sint32 replyTimeoutSec = 5;
+
+    /**
+    * JSON object with a custom bot data.
+    */
+    optional google.protobuf.Struct custom_data = 6;
+
+    /**
+     * Timeout for waiting client's reaction for the operator's last action within the conversation
+     */
+    optional sint32 clientTimeoutSec = 7;
+
+    /**
+     * Task priority in queue
+     */
+    optional sint32 taskPriority = 8;
+}
+
+/**
+ * The structure that defines a message for enqueue task
+ * @hidden
+ */
+message EndTaskRequest {
+    enum CloseStatus {
+        CLIENT_TERMINATION = 0;
+        AGENT_TERMINATION = 1;
+        CANCEL_TASK = 3;
+    }
+
+    /**
+     * Task ID for end request
+     */
+    required string task_id = 1;
+
+    /**
+     * Queue info to enqueue the task
+     */
+    required CloseStatus status = 2;
+}
+
+/**
+ * The structure that defines a message for transfer conversation to another operator
+ */
+message TransferRequest {
+    required string conversationUUID = 1;
+
+    oneof message {
+        string imUsername = 2;
+        sint64 userId = 3;
+    }
+}
+
+/**
+ * General structure to specify the type of a bot's command.
+ * @hidden
+ */
+message SQBotCommand {
+
+    /**
+     * Type of a command.
+     */
+    required BotCommandType type = 1;
+
+    /**
+     * Corresponding request.
+     */
+    oneof message {
+        SendMessageRequest sendMessageRequest = 2;
+        EditMessageRequest editMessageRequest = 3;
+        RemoveMessageRequest removeMessageRequest = 4;
+        EnqueueTaskRequest enqueueTaskRequest = 5;
+        EndTaskRequest endTaskRequest = 6;
+        vox.store.RetransmitEventsRequest retransmitEventsRequest = 7;
+        TransferRequest transferRequest = 8;
+    }
+}
+
+/**
+ * Request structure for the [RegisterWebHook] method.
+ * @hidden
+ */
+message RegisterWebHookRequest {
+
+    /**
+     * URL to register as a webhook.
+     * Should start with a protocol, e.g. `https://`.
+     */
+    required string callbackUrl = 1;
+}
+
+/**
+ * Response structure for the [RegisterWebHook] method.
+ * @hidden
+ */
+message RegisterWebHookResponse {
+
+    /**
+     * UUID of the created webhook.
+     */
+    required string uuid = 1;
+}
+
+/**
+ * Request structure for the [UnregisterWebHook] method.
+ * @hidden
+ */
+message UnregisterWebHookRequest {
+
+    /**
+     * UUID which specifies one of existing webhooks.
+     */
+    required string uuid = 1;
+}

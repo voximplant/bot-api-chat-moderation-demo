@@ -1,0 +1,18 @@
+export const MY_APP = process.env.VUE_APP_MY_APP;
+export const URL_NEW_USERS = process.env.VUE_APP_URL_NEW_USERS;
+export const URL_BOT_BACKEND = process.env.VUE_APP_URL_BOT_BACKEND;
+export const URL_APP_FRONTEND = process.env.VUE_APP_URL_APP_FRONTEND;
+
+export const TIME_ONLINE_NOTIFICATION = 30000;
+export const TIME_TYPING_NOTIFICATION = 10000;
+
+export const BLOCK_LIST_SEPARATOR = ',';
+
+export default {
+  MY_APP,
+  TIME_ONLINE_NOTIFICATION,
+  TIME_TYPING_NOTIFICATION,
+  URL_NEW_USERS,
+  URL_BOT_BACKEND,
+  BLOCK_LIST_SEPARATOR,
+};
